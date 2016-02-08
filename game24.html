@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<head>
+    <meta charset="utf-8">
+<style>
+
+h2 {
+    font-size: 25px;
+}
+
+h4 {
+    font-size: 18px;
+}
+p {
+	font-family:verdana;
+	font-size:12px;
+	text-alignment:justify;
+}
+p2 {
+	font-family:verdana;
+	font-size:72px;
+	text-indent:50px;
+}
+p3 {
+	font-family:verdana;
+	font-size:32px;
+	text-indent:25px;
+}
+table {
+	border: 1px solid black;
+}
+td{ border: 1px solid black;
+    background-color:lightgrey;
+    color:black;
+}
+td:hover{
+    background-color:white;
+    color:black;
+}
+table.outerfixed {table-layout:fixed; width:300px;border=1px;border:collapse;background-color:lightgrey}
+table.outerfixed td {overflow:hidden;}/*Hide text outside the cell.*/
+table.outerfixed td:nth-of-type(1) {width:149px;text-align:center;}/*Setting the width of column 1.*/
+table.outerfixed td:nth-of-type(2) {width:149px;text-align:center;}/*Setting the width of column 2.*/
+table.outerfixed tr:nth-of-type(1) {height:149px;vertical-align:center;}/*Setting the height of row 1.*/
+table.outerfixed tr:nth-of-type(2) {height:149px;vertical-align:center;}/*Setting the height of row 2.*/
+table.innerfixed {table-layout:fixed; width:150px;border=1px;border:collapse;background-color:lightblue}
+table.innerfixed td {overflow:hidden;}/*Hide text outside the cell.*/
+table.innerfixed td:nth-of-type(1) {width:74px;text-align:center;}/*Setting the width of column 1.*/
+table.innerfixed td:nth-of-type(2) {width:74px;text-align:center;}/*Setting the width of column 2.*/
+table.innerfixed tr:nth-of-type(1) {height:74px;vertical-align:center;}/*Setting the height of row 1.*/
+table.innerfixed tr:nth-of-type(2) {height:74px;vertical-align:center;}/*Setting the height of row 2.*/
+</style>
+<script>
+var gamelist = [[1,2,3,4],[1,1,4,6],[1,2,4,6],[1,2,3,6],[1,2,3,5]];
+var	IDs = ["11","12","21","22"];
+var cellHTML = {11:"",12:'',21:"",22:""};
+var blankCellCount;
+var audio=new Audio('fanfare.wav');
+
+function getPosition(id) {
+    var xPosition = 0;
+    var yPosition = 0;
+  
+    element = document.getElementById(id);
+    while(element) {
+        xPosition += (element.offsetLeft - element.scrollLeft + element.clientLeft);
+        yPosition += (element.offsetTop - element.scrollTop + element.clientTop);
+        element = element.offsetParent;
+    }
+	var pos = {x:xPosition, y:yPosition};
+    return (pos);
+}
+
+function pickAGame() {
+	//pick a random game from gamelist
+	gameWon = false;
+	l = gamelist.length
+	n = Math.round(Math.random()*l);
+	game = gamelist[n-1];
+}
+
+function PopulateValues() {
+	blankCellCount = 0;				//if the blankCellCount is 3 and one of the values in the last cell is 24 then the game is successfully finished.
+	i = 0;
+	for (x = 0;x < 4;x++) {
+	//get the position of the first block
+	cellHTML[IDs[x]] = document.getElementById(IDs[x]).innerHTML;
+	document.getElementById(IDs[x]).innerHTML = "<p2 id="+IDs[x]+">"+game[x]+"</p2>";
+	}
+}
+//computes the 4 operations add, subtract, multiply, divide, return the results in an array in that order.
+function computeValues(op1,op2) {
+	var result = [];
+	result.push(op1+op2);
+	result.push(op1-op2);
+	result.push(op1*op2);
+	result.push(op1/op2);
+	return result;
+	}
+/**********************************************  dragto  *************************************************************/
+/* This is where all the transformation of the two cells happens. The origi cell is removed, and the destination cell
+   now contains the result of the computation of the two cells together.                                              */
+function dragto(cellOrigin,cellDest) {	//cellOrigin and cellDest are the ids of the cells i.e. 11,12,21 or 22
+	var isIt24 = false;
+	op1 =  $("#"+cellDest).text();
+	op2 =  $("#"+cellOrigin).text();
+	if (op1 == "" || op2 == "")return;
+	if (cellDest.length == 2)
+		document.getElementById(cellDest).innerHTML = cellHTML[cellDest];
+	if (cellOrigin.length == 4)
+		cellOrigin = cellOrigin.slice(0,2);
+	document.getElementById(cellOrigin).innerHTML = "";
+	blankCellCount++;
+	vals = computeValues(Number(op1),Number(op2));
+	if (cellDest.length ==4)
+		cellDest = cellDest.slice(0,2);
+	for (x=0;x<4;x++) {
+		textcolor = "black";
+		if ((blankCellCount == 3) && (vals[x] == 24)) {
+			isIt24 = true;
+			textcolor = "red";
+		}
+		document.getElementById(cellDest+IDs[x]).innerHTML = "<p3  style='color:"+textcolor+";' id="+cellDest+IDs[x]+">"+vals[x]+"</p3>";
+	}
+	if ( isIt24) {
+		gameWon = true;
+		document.getElementById("result").innerHTML = "Congratulations! You did it";
+		audio.play();
+	}
+}
+//*************************************
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function drag(ev) {
+    ev.dataTransfer.setData("cellOrigin", ev.target.id);
+}
+
+function drop(ev) {
+    ev.preventDefault();
+    var Origin = ev.dataTransfer.getData("cellOrigin");
+    Dest = ev.target.id;
+	dragto(Origin,Dest);
+}
+
+function newGame() {
+	pickAGame();
+	PopulateValues();
+}
+
+function ShowHelp() {
+	window.open ("help24.html","helpwindow","scrollbars=yes, resizable=yes, top=50, left=500, width=1300, height=900");
+}
+
+function Restart() {
+	PopulateValues();
+}
+
+</script>
+</head>
+<body>
+<h2>Game of 24</h2>
+<div id="Arena";style="position: relative top:250px; align:center">
+<table class=outerfixed align:center>
+<tr>
+<td id=11  draggable="true" ondrop="drop(event)" ondragstart="drag(event)" ondragover="allowDrop(event)">
+<table class=innerfixed>
+<tr>
+<td id=1111 width="75" height="75" alt="" title="" ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+<td id=1112 width="75" height="75" alt="" title="" ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+</tr>
+<tr>
+<td id=1121 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+<td id=1122 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+</tr>
+</table>
+</td>
+<td id=12  draggable="true" ondrop="drop(event)" ondragstart="drag(event)" ondragover="allowDrop(event)">
+<table class=innerfixed>
+<tr>
+<td id=1211 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+<td id=1212 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+</tr>
+<tr>
+<td id=1221 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+<td id=1222 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td id=21  draggable="true" ondrop="drop(event)" ondragstart="drag(event)" ondragover="allowDrop(event)">
+<table class=innerfixed>
+<tr>
+<td id=2111 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+<td id=2112 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+</tr>
+<tr>
+<td id=2121 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+<td id=2122 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+</tr>
+</table>
+</td>
+<td id=22  draggable="true" ondrop="drop(event)" ondragstart="drag(event)" ondragover="allowDrop(event)">
+<table class=innerfixed>
+<tr>
+<td id=2211 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+<td id=2212 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)"/ ondragover="allowDrop(event)"></td>
+</tr>
+<tr>
+<td id=2221 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+<td id=2222 width="75" height="75" alt="" title=""  ondrop="drop(event)" draggable="true" ondragstart="drag(event)" ondragover="allowDrop(event)"/></td>
+</tr>
+</table>
+</td>
+</table>
+</center>
+<center><h2 id="result"></h2><br><br>
+    <input type="button" onclick="newGame();" Value="New Game";>
+	<input type="button" onclick="ShowHelp();" Value="Help";><br>
+	<input type="button" onclick="Restart();" Value="Restart";>
+</center>
+
+<script>newGame();
+</script>
+</div>
+</body>
+</html>
