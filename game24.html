@@ -3,6 +3,7 @@
 
 <html>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script type='text/javascript' src='gamelist.js'></script>
 <head>
     <meta charset="utf-8">
 <style>
@@ -54,10 +55,12 @@ table.innerfixed tr:nth-of-type(1) {height:74px;vertical-align:center;}/*Setting
 table.innerfixed tr:nth-of-type(2) {height:74px;vertical-align:center;}/*Setting the height of row 2.*/
 </style>
 <script>
-var gamelist = [[1,2,3,4],[1,1,4,6],[1,2,4,6],[1,2,3,6],[1,2,3,5]];
 var	IDs = ["11","12","21","22"];
 var cellHTML = {11:"",12:'',21:"",22:""};
 var blankCellCount;
+var UndoPossible = false;
+var lastOrigin, lastDest;
+var lastOriginContent, lastDestContent;
 var audio=new Audio('fanfare.wav');
 
 function getPosition(id) {
@@ -73,7 +76,17 @@ function getPosition(id) {
 	var pos = {x:xPosition, y:yPosition};
     return (pos);
 }
+/*
+function loadGameList() {
+	//Load list of games from the Games24.csv
+	var reader = new FileReader();
+	reader.onload = function(e) {
+	var text = reader.result;
+}
 
+reader.readAsText(file, encoding);
+}
+*/
 function pickAGame() {
 	//pick a random game from gamelist
 	gameWon = false;
@@ -87,7 +100,6 @@ function PopulateValues() {
 	i = 0;
 	for (x = 0;x < 4;x++) {
 	//get the position of the first block
-	cellHTML[IDs[x]] = document.getElementById(IDs[x]).innerHTML;
 	document.getElementById(IDs[x]).innerHTML = "<p2 id="+IDs[x]+">"+game[x]+"</p2>";
 	}
 }
@@ -100,11 +112,36 @@ function computeValues(op1,op2) {
 	result.push(op1/op2);
 	return result;
 	}
+	
+function captureLastMove(cellOrigin,cellDest) {  // will be used in Undo to restore these two cells that were changed in the latest move.
+	UndoPossible = true;
+	lastOrigin = cellOrigin;
+	lastDest = cellDest;
+	if (lastOrigin.length == 4)
+		lastOrigin = lastOrigin.slice(0,2);
+	if (lastDest.length == 4)
+		lastDest = lastDest.slice(0,2);
+	lastOriginContent = document.getElementById(lastOrigin).innerHTML;
+	lastDestContent = document.getElementById(lastDest).innerHTML;
+}
+
+function Undo() {
+	if (!UndoPossible)
+		alert("Undo is not possible, you may want to restart");
+	else {
+		UndoPossible = false;
+		document.getElementById(lastOrigin).innerHTML = lastOriginContent;
+		document.getElementById(lastDest).innerHTML = lastDestContent;
+		blankCellCount--;
+	}
+}
+
 /**********************************************  dragto  *************************************************************/
 /* This is where all the transformation of the two cells happens. The origi cell is removed, and the destination cell
    now contains the result of the computation of the two cells together.                                              */
 function dragto(cellOrigin,cellDest) {	//cellOrigin and cellDest are the ids of the cells i.e. 11,12,21 or 22
 	var isIt24 = false;
+	captureLastMove(cellOrigin,cellDest);
 	op1 =  $("#"+cellDest).text();
 	op2 =  $("#"+cellOrigin).text();
 	if (op1 == "" || op2 == "")return;
@@ -147,8 +184,16 @@ function drop(ev) {
 	dragto(Origin,Dest);
 }
 
-function newGame() {
+function init() {
+	for (x = 0;x < 4;x++) 
+		cellHTML[IDs[x]] = document.getElementById(IDs[x]).innerHTML;
 	pickAGame();
+	PopulateValues();
+}
+
+function newGame() {
+//	loadGameList();
+	init();
 	PopulateValues();
 }
 
@@ -222,6 +267,7 @@ function Restart() {
 <center><h2 id="result"></h2><br><br>
     <input type="button" onclick="newGame();" Value="New Game";>
 	<input type="button" onclick="ShowHelp();" Value="Help";><br>
+	<input type="button" onclick="Undo();" Value="Undo";>
 	<input type="button" onclick="Restart();" Value="Restart";>
 </center>
 
