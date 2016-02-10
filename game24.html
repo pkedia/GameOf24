@@ -41,13 +41,13 @@ td:hover{
     background-color:white;
     color:black;
 }
-table.outerfixed {table-layout:fixed; width:300px;border=1px;border:collapse;background-color:lightgrey}
+table.outerfixed {table-layout:fixed; width:300px;border=1px;border-collapse:collapse;background-color:lightgrey}
 table.outerfixed td {overflow:hidden;}/*Hide text outside the cell.*/
 table.outerfixed td:nth-of-type(1) {width:149px;text-align:center;}/*Setting the width of column 1.*/
 table.outerfixed td:nth-of-type(2) {width:149px;text-align:center;}/*Setting the width of column 2.*/
 table.outerfixed tr:nth-of-type(1) {height:149px;vertical-align:center;}/*Setting the height of row 1.*/
 table.outerfixed tr:nth-of-type(2) {height:149px;vertical-align:center;}/*Setting the height of row 2.*/
-table.innerfixed {table-layout:fixed; width:150px;border=1px;border:collapse;background-color:lightblue}
+table.innerfixed {table-layout:fixed; width:150px;border=1px;border-collapse:collapse;background-color:lightblue}
 table.innerfixed td {overflow:hidden;}/*Hide text outside the cell.*/
 table.innerfixed td:nth-of-type(1) {width:74px;text-align:center;}/*Setting the width of column 1.*/
 table.innerfixed td:nth-of-type(2) {width:74px;text-align:center;}/*Setting the width of column 2.*/
@@ -91,7 +91,9 @@ function pickAGame() {
 	//pick a random game from gamelist
 	gameWon = false;
 	l = gamelist.length
-	n = Math.round(Math.random()*l);
+	randomnum = Math.random();
+	n = Math.round(randomnum*l);
+	alert(randomnum+","+n);
 	game = gamelist[n-1];
 }
 
@@ -140,6 +142,7 @@ function Undo() {
 /* This is where all the transformation of the two cells happens. The origi cell is removed, and the destination cell
    now contains the result of the computation of the two cells together.                                              */
 function dragto(cellOrigin,cellDest) {	//cellOrigin and cellDest are the ids of the cells i.e. 11,12,21 or 22
+	if (cellOrigin == cellDest) return;
 	var isIt24 = false;
 	captureLastMove(cellOrigin,cellDest);
 	op1 =  $("#"+cellDest).text();
@@ -186,7 +189,8 @@ function drop(ev) {
 
 function init() {
 	for (x = 0;x < 4;x++) 
-		cellHTML[IDs[x]] = document.getElementById(IDs[x]).innerHTML;
+		if (cellHTML[IDs[x]] =="")
+			cellHTML[IDs[x]] = document.getElementById(IDs[x]).innerHTML;
 	pickAGame();
 	PopulateValues();
 }
