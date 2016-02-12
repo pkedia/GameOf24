@@ -56,11 +56,13 @@ table.innerfixed tr:nth-of-type(2) {height:74px;vertical-align:center;}/*Setting
 </style>
 <script>
 var	IDs = ["11","12","21","22"];
+var oper = ["+","-","*","/"];
 var cellHTML = {11:"",12:'',21:"",22:""};
 var blankCellCount;
 var UndoPossible = false;
 var lastOrigin, lastDest;
 var lastOriginContent, lastDestContent;
+var movestack = [];		//we are going to build the equation with the list of saved moves.
 var audio=new Audio('fanfare.wav');
 
 function getPosition(id) {
@@ -76,17 +78,7 @@ function getPosition(id) {
 	var pos = {x:xPosition, y:yPosition};
     return (pos);
 }
-/*
-function loadGameList() {
-	//Load list of games from the Games24.csv
-	var reader = new FileReader();
-	reader.onload = function(e) {
-	var text = reader.result;
-}
 
-reader.readAsText(file, encoding);
-}
-*/
 function pickAGame() {
 	//pick a random game from gamelist
 	gameWon = false;
@@ -113,9 +105,18 @@ function computeValues(op1,op2) {
 	result.push(op1/op2);
 	return result;
 	}
-	
+
+function setUndoButton(disable) {	//disable = true means set the button disabled otherwise enable it.
+	if (disable)
+		document.getElementById("undobutton").disabled = true;
+	else
+		document.getElementById("undobutton").disabled = false;
+}
+
 function captureLastMove(cellOrigin,cellDest) {  // will be used in Undo to restore these two cells that were changed in the latest move.
+	var move = {from: cellOrigin, to: cellDest};
 	UndoPossible = true;
+	setUndoButton(false);
 	lastOrigin = cellOrigin;
 	lastDest = cellDest;
 	if (lastOrigin.length == 4)
@@ -124,6 +125,10 @@ function captureLastMove(cellOrigin,cellDest) {  // will be used in Undo to rest
 		lastDest = lastDest.slice(0,2);
 	lastOriginContent = document.getElementById(lastOrigin).innerHTML;
 	lastDestContent = document.getElementById(lastDest).innerHTML;
+	origEl = document.getElementById(cellOrigin);
+	move.OriginValue = origEl.innerText || origEl.textContent;
+	destEl = document.getElementById(cellDest);
+	move.DestValue = destEl.innerText || destEl.textContent;
 }
 
 function Undo() {
@@ -131,10 +136,17 @@ function Undo() {
 		alert("Undo is not possible, you may want to restart");
 	else {
 		UndoPossible = false;
+		setUndoButton(true);
 		document.getElementById(lastOrigin).innerHTML = lastOriginContent;
 		document.getElementById(lastDest).innerHTML = lastDestContent;
 		blankCellCount--;
 	}
+}
+
+function GetEqn(cell) {
+	elem = document.getElementById(cell).getElementsByClassName("p3");;
+	eq = elem[0].getAttribute("eqn");
+	return "("+eq+")";
 }
 
 /**********************************************  dragto  *************************************************************/
@@ -147,10 +159,15 @@ function dragto(cellOrigin,cellDest) {	//cellOrigin and cellDest are the ids of 
 	op1 =  $("#"+cellDest).text();
 	op2 =  $("#"+cellOrigin).text();
 	if (op1 == "" || op2 == "")return;
+	eqntext = constructEqn(op1,op2,cellOrigin,cellDest);
 	if (cellDest.length == 2)
 		document.getElementById(cellDest).innerHTML = cellHTML[cellDest];
-	if (cellOrigin.length == 4)
+	else
+		movestack.push(GetEqn(cellDest));
+	if (cellOrigin.length == 4) {
+		movestack.push(GetEqn(cellOrigin));
 		cellOrigin = cellOrigin.slice(0,2);
+	}
 	document.getElementById(cellOrigin).innerHTML = "";
 	blankCellCount++;
 	vals = computeValues(Number(op1),Number(op2));
@@ -158,18 +175,79 @@ function dragto(cellOrigin,cellDest) {	//cellOrigin and cellDest are the ids of 
 		cellDest = cellDest.slice(0,2);
 	for (x=0;x<4;x++) {
 		textcolor = "black";
+		isIt24 = false;
 		if ((blankCellCount == 3) && (vals[x] == 24)) {
 			isIt24 = true;
+			gameWon = true;
 			textcolor = "red";
 		}
-		document.getElementById(cellDest+IDs[x]).innerHTML = "<p3  style='color:"+textcolor+";' id="+cellDest+IDs[x]+">"+vals[x]+"</p3>";
+		eqntext2 = eqntext.replace("$",oper[x]);
+		document.getElementById(cellDest+IDs[x]).innerHTML = "<p3 class='p3' style='color:"+textcolor+";' eqn = '"+eqntext2+"' id="+cellDest+IDs[x]+">"+vals[x]+"</p3>";
+		if (isIt24) 
+			movestack.push(op1+oper[x]+op2);
 	}
-	if ( isIt24) {
-		gameWon = true;
-		document.getElementById("result").innerHTML = "Congratulations! You did it";
+	if (gameWon) {
+		document.getElementById("result").innerHTML = "Congratulations! You did it\n"+DisplayEquation();
 		audio.play();
 	}
 }
+
+function DisplayEquation() {
+	var eqn = "";
+	for (i = 0;i < movestack.length; i++) {
+		thismove = movestack[i];		//there is an operator at the end of the string, move it replace th e comma.
+		oper = thismove[thismove.length];
+		if (isAnOperator(oper)) {
+			n= thismove.indexOf(",");
+			if (n > -1)
+				thismove[n-1] = oper;
+		}
+		eqn += thismove+";";
+	}
+	var gamevars = "";
+	for (i = 0;i < 4;i++)
+		gamevars += game[i]+" ";
+	eqn = "\noriginal numbers: "+gamevars+"; solution: "+eqn;
+	return eqn;
+}
+
+function isADigit(ch) {
+	retval = ch.length === 1 && ch.match(/[0-9]/i);
+	return retval;
+}
+
+function isAnOperator(ch) {
+	if (ch == "+") return true;
+	if (ch == "-") return true;
+	if (ch == "*") return true;
+	if (ch == "/") return true;
+	return false;
+}
+
+function isParen(ch) {
+	if (ch == "(") return true;
+	if (ch == ")") return true;
+	return false;
+}
+
+function constructEqn(op1,op2,cellOrigin,cellDest) {
+	if (cellDest.length == 4) {
+		elem = document.getElementById(cellDest).getElementsByClassName("p3");
+		eqDest = elem[0].getAttribute("eqn");
+	} 
+	else {
+		eqDest = op1;
+	}
+	if (cellOrigin.length == 4) {
+		elem = document.getElementById(cellOrigin).getElementsByClassName("p3");
+		eqOrigin = elem[0].getAttribute("eqn");
+	}
+	else {
+		eqOrigin = op2;
+	}
+	return eqDest+"$"+eqOrigin;
+}
+
 //*************************************
 function allowDrop(ev) {
     ev.preventDefault();
@@ -186,18 +264,19 @@ function drop(ev) {
 	dragto(Origin,Dest);
 }
 
-function init() {
+function init(pic) {
 	for (x = 0;x < 4;x++) 
 		if (cellHTML[IDs[x]] =="")
 			cellHTML[IDs[x]] = document.getElementById(IDs[x]).innerHTML;
-	pickAGame();
+	document.getElementById("result").innerHTML = "";
+	if (pic) 
+		pickAGame();
 	PopulateValues();
+	setUndoButton(true);
 }
 
 function newGame() {
-//	loadGameList();
-	init();
-	PopulateValues();
+	init(true);
 }
 
 function ShowHelp() {
@@ -205,7 +284,7 @@ function ShowHelp() {
 }
 
 function Restart() {
-	PopulateValues();
+	init(false);
 }
 
 </script>
@@ -267,11 +346,12 @@ function Restart() {
 </td>
 </table>
 </center>
-<center><h2 id="result"></h2><br><br>
-    <input type="button" onclick="newGame();" Value="New Game";>
-	<input type="button" onclick="ShowHelp();" Value="Help";><br>
-	<input type="button" onclick="Undo();" Value="Undo";>
-	<input type="button" onclick="Restart();" Value="Restart";>
+<center><h2 id="result"></h2><br>
+<h2 id="Equation"></h2><br>
+<input type="button" onclick="newGame();" Value="New Game";>
+<input type="button" onclick="ShowHelp();" Value="Help";><br>
+<input type="button" id="undobutton"; onclick="Undo();" Value="Undo";>
+<input type="button" onclick="Restart();" Value="Restart";>
 </center>
 
 <script>newGame();
