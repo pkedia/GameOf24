@@ -41,7 +41,7 @@ td:hover{
     background-color:white;
     color:black;
 }
-table.outerfixed {table-layout:fixed; width:300px;border=1px;border-collapse:collapse;background-color:lightgrey}
+table.outerfixed {table-layout:fixed; width:300px;border=1px;border-collapse:collapse;background-color:lightgrey;align:center}
 table.outerfixed td {overflow:hidden;}/*Hide text outside the cell.*/
 table.outerfixed td:nth-of-type(1) {width:149px;text-align:center;}/*Setting the width of column 1.*/
 table.outerfixed td:nth-of-type(2) {width:149px;text-align:center;}/*Setting the width of column 2.*/
@@ -187,7 +187,8 @@ function dragto(cellOrigin,cellDest) {	//cellOrigin and cellDest are the ids of 
 			movestack.push(op1+oper[x]+op2);
 	}
 	if (gameWon) {
-		document.getElementById("result").innerHTML = "Congratulations! You did it\n"+DisplayEquation();
+		document.getElementById("result1").innerHTML = "Congratulations! You did it!!!  ";
+		document.getElementById("result2").innerHTML = DisplayEquation();
 		audio.play();
 	}
 }
@@ -268,7 +269,8 @@ function init(pic) {
 	for (x = 0;x < 4;x++) 
 		if (cellHTML[IDs[x]] =="")
 			cellHTML[IDs[x]] = document.getElementById(IDs[x]).innerHTML;
-	document.getElementById("result").innerHTML = "";
+	document.getElementById("result1").innerHTML = "";
+	document.getElementById("result2").innerHTML = "";
 	if (pic) 
 		pickAGame();
 	PopulateValues();
@@ -290,9 +292,9 @@ function Restart() {
 </script>
 </head>
 <body>
-<h2>Game of 24</h2>
+<center><h2>Game of 24</h2></center>
 <div id="Arena";style="position: relative top:250px; align:center">
-<table class=outerfixed align:center>
+<table class=outerfixed align="center">
 <tr>
 <td id=11  draggable="true" ondrop="drop(event)" ondragstart="drag(event)" ondragover="allowDrop(event)">
 <table class=innerfixed>
@@ -346,8 +348,8 @@ function Restart() {
 </td>
 </table>
 </center>
-<center><h2 id="result"></h2><br>
-<h2 id="Equation"></h2><br>
+<center><h2 id="result1"></h2><br>
+<center><h2 id="result2"></h2><br>
 <input type="button" onclick="newGame();" Value="New Game";>
 <input type="button" onclick="ShowHelp();" Value="Help";><br>
 <input type="button" id="undobutton"; onclick="Undo();" Value="Undo";>
