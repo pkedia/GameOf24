@@ -197,11 +197,11 @@ function DisplayEquation() {
 	var eqn = "";
 	for (i = 0;i < movestack.length; i++) {
 		thismove = movestack[i];		//there is an operator at the end of the string, move it replace th e comma.
-		oper = thismove[thismove.length];
-		if (isAnOperator(oper)) {
+		Anoper = thismove[thismove.length];
+		if (isAnOperator(Anoper)) {
 			n= thismove.indexOf(",");
 			if (n > -1)
-				thismove[n-1] = oper;
+				thismove[n-1] = Anoper;
 		}
 		eqn += thismove+";";
 	}
